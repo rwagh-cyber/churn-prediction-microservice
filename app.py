@@ -19,6 +19,12 @@ with col2:
     online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
     tech_support = st.selectbox("Tech Support", ["yes", "no", "No internet service"])
     paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
+    payment_method = st.selectbox("Payment Method", [
+        "Electronic check", 
+        "Mailed check", 
+        "Bank transfer (automatic)", 
+        "Credit card (automatic)"
+    ])
 
 with col3:
     gender = st.selectbox("Gender", ["Male", "Female"])
@@ -31,13 +37,14 @@ if st.button("🚀 Predict Churn Risk"):
     BACKEND_URL = "https://churn-prediction-microservice.onrender.com/predict"
 
     payload = {
-        "tenure_months": tenure_months,  # <-- Crucial field expected by FastAPI
+        "tenure_months": tenure_months,
         "MonthlyCharges": monthly_charges,
         "TotalCharges": total_charges,
         "Contract": contract,
         "OnlineSecurity": online_security,
         "TechSupport": tech_support,
         "PaperlessBilling": paperless_billing,
+        "payment_method": payment_method,
         "Gender": gender,
         "SeniorCitizen": senior_citizen,
         "Partner": partner,
