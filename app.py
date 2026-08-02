@@ -16,7 +16,6 @@ with col1:
     num_support_tickets = st.number_input("Support Tickets Raised", min_value=0, max_value=20, value=2)
 
 with col2:
-    # Options mapped directly to Literal values in schemas.py
     contract_type = st.selectbox(
         "Contract Type", 
         options=["month-to-month", "one-year", "two-year"]
@@ -34,10 +33,9 @@ with col2:
 
 # --- Predict Action ---
 if st.button("🚀 Predict Churn Risk"):
-    # Updated to your Render URL endpoint
-    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
+    # URL चा शेवटी trailing slash (/) जोडला आहे ज्यामुळे 405 Redirect एरर येणार नाही
+    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict/"
 
-    # Exact payload matching schemas.py CustomerInput fields
     payload = {
         "tenure_months": int(tenure_months),
         "monthly_charges": float(monthly_charges),
@@ -55,13 +53,12 @@ if st.button("🚀 Predict Churn Risk"):
             if response.status_code == 200:
                 res = response.json()
                 
-                # Matching PredictionResponse fields in schemas.py
                 churn_pred = res.get("churn_prediction")
                 churn_prob = res.get("churn_probability", 0.0)
                 risk_level = res.get("churn_risk_level", "Unknown")
 
                 st.subheader("Prediction Result:")
-                if churn_pred == 1 or risk_level.lower() == "high":
+                if churn_pred == 1 or str(risk_level).lower() == "high":
                     st.error(f"⚠️ Churn Risk Level: **{risk_level}**")
                 else:
                     st.success(f"✅ Churn Risk Level: **{risk_level}**")
