@@ -1,96 +1,68 @@
 import streamlit as st
 import requests
 
-st.set_page_config(
-    page_title="Customer Churn Prediction",
-    page_icon="📊",
-    layout="wide"
-)
+st.set_page_config(page_title="Customer Churn Prediction", page_icon="🚀", layout="wide")
 
-st.title("📊 Enterprise Customer Churn Prediction Dashboard")
-st.write("Enter customer details below to predict churn probability in real-time.")
+st.title("📊 Customer Churn Prediction Dashboard")
+st.write("Fill in customer details below to estimate churn risk.")
 
-# Form Layout
-with st.form("churn_form"):
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        tenure = st.number_input("Tenure (Months)", min_value=0, max_value=120, value=12)
-        monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.5)
-        total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.0)
-        contract = st.selectbox("Contract Type", ["month-to-month", "one-year", "two-year"])
-        
-    with col2:
-        internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
-        online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
-        tech_support = st.selectbox("Tech Support", ["yes", "no"])
-        paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
-        
-    with col3:
-        payment_method_display = st.selectbox("Payment Method", [
-            "Electronic Check", 
-            "Credit Card", 
-            "Bank Transfer"
-        ])
-        gender = st.selectbox("Gender", ["Male", "Female"])
-        senior_citizen = st.selectbox("Senior Citizen", [0, 1])
-        partner = st.selectbox("Partner", ["Yes", "No"])
-        dependents = st.selectbox("Dependents", ["Yes", "No"])
+# --- UI Input Layout ---
+col1, col2, col3 = st.columns(3)
 
-    submit_button = st.form_submit_button("🚀 Predict Churn Risk")
+with col1:
+    monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.50)
+    total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.00)
+    contract = st.selectbox("Contract Type", ["month-to-month", "One year", "Two year"])
 
-if submit_button:
-    # Map payment method display name to backend expected enum
-    payment_map = {
-        "Electronic Check": "electronic_check",
-        "Credit Card": "credit_card",
-        "Bank Transfer": "bank_transfer"
-    }
-    payment_method = payment_map[payment_method_display]
+with col2:
+    online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
+    tech_support = st.selectbox("Tech Support", ["yes", "no", "No internet service"])
+    paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
 
-    # Payload matching FastAPI Pydantic Schema exactly
+with col3:
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    senior_citizen = st.selectbox("Senior Citizen", [0, 1])
+    partner = st.selectbox("Partner", ["Yes", "No"])
+    dependents = st.selectbox("Dependents", ["Yes", "No"])
+
+# --- Predict Action ---
+if st.button("🚀 Predict Churn Risk"):
+    BACKEND_URL = "https://churn-prediction-microservice.onrender.com/predict"
+
     payload = {
-        "tenure_months": tenure,
-        "monthly_charges": monthly_charges,
-        "total_charges": total_charges,
-        "contract_type": contract,
-        "num_support_tickets": 1,
-        "gender": gender,
+        "MonthlyCharges": monthly_charges,
+        "TotalCharges": total_charges,
+        "Contract": contract,
+        "OnlineSecurity": online_security,
+        "TechSupport": tech_support,
+        "PaperlessBilling": paperless_billing,
+        "Gender": gender,
         "SeniorCitizen": senior_citizen,
         "Partner": partner,
-        "Dependents": dependents,
-        "PhoneService": "Yes",
-        "MultipleLines": "No",
-        "InternetService": internet_service,
-        "OnlineSecurity": online_security,
-        "OnlineBackup": "No",
-        "DeviceProtection": "No",
-        "tech_support": tech_support,
-        "StreamingTV": "No",
-        "StreamingMovies": "No",
-        "PaperlessBilling": paperless_billing,
-        "payment_method": payment_method
+        "Dependents": dependents
     }
 
-    try:
-        # Send payload to local FastAPI server
-# Send payload to Render FastAPI backend server
-        response = requests.post("https://churn-prediction-microservice.onrender.com/predict", json=payload)
-        if response.status_code == 200:
-            result = response.json()
-            churn_prob = result.get("churn_probability", result.get("probability", 0.0))
-            is_churn = result.get("churn_prediction", result.get("prediction", 0))
+    with st.spinner("Connecting to FastAPI backend..."):
+        try:
+            response = requests.post(BACKEND_URL, json=payload, timeout=30)
 
-            st.markdown("---")
-            st.subheader("🎯 Prediction Result")
-            
-            if is_churn == 1 or churn_prob > 0.5:
-                st.error(f"⚠️ **High Churn Risk!** Customer is likely to leave. Risk Probability: **{churn_prob*100:.1f}%**")
+            if response.status_code == 200:
+                res = response.json()
+                risk = res.get("churn_risk", "Unknown")
+                prob = res.get("churn_probability")
+
+                st.subheader("Prediction Result:")
+                if risk == "High":
+                    st.error(f"⚠️ Churn Risk: **{risk}**")
+                else:
+                    st.success(f"✅ Churn Risk: **{risk}**")
+
+                if prob is not None:
+                    st.metric(label="Churn Probability", value=f"{prob * 100:.1f}%")
+
             else:
-                st.success(f"✅ **Low Churn Risk.** Customer is likely to stay. Retention Confidence: **{(1-churn_prob)*100:.1f}%**")
-        else:
-            st.warning(f"FastAPI Server returned status code: {response.status_code}")
-            st.write(response.text)
-            
-    except Exception as e:
-        st.error("❌ Could not connect to FastAPI Backend. Make sure `uvicorn main:app` is running!")
+                st.error(f"FastAPI Server returned status code: {response.status_code}")
+                st.code(response.text)
+
+        except requests.exceptions.RequestException as err:
+            st.error(f"Failed to reach FastAPI backend: {err}")
