@@ -7,52 +7,45 @@ st.title("📊 Customer Churn Prediction Dashboard")
 st.write("Fill in customer details below to estimate churn risk.")
 
 # --- UI Input Layout ---
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
     tenure_months = st.number_input("Tenure (Months)", min_value=0, max_value=120, value=12)
-    monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.50)
-    total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.00)
-    contract = st.selectbox("Contract Type", ["month-to-month", "One year", "Two year"])
-    num_support_tickets = st.number_input("Number of Support Tickets", min_value=0, max_value=20, value=0)
+    monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=85.50)
+    total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=1026.00)
+    num_support_tickets = st.number_input("Support Tickets Raised", min_value=0, max_value=20, value=2)
 
 with col2:
-    online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
-    tech_support = st.selectbox("Tech Support", ["yes", "no", "No internet service"])
-    paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
-    payment_method = st.selectbox("Payment Method", [
-        "Electronic check", 
-        "Mailed check", 
-        "Bank transfer (automatic)", 
-        "Credit card (automatic)"
-    ])
-    num_admin_tickets = st.number_input("Number of Admin Tickets", min_value=0, max_value=20, value=0)
-
-with col3:
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    senior_citizen = st.selectbox("Senior Citizen", [0, 1])
-    partner = st.selectbox("Partner", ["Yes", "No"])
-    dependents = st.selectbox("Dependents", ["Yes", "No"])
+    # Options mapped directly to Literal values in schemas.py
+    contract_type = st.selectbox(
+        "Contract Type", 
+        options=["month-to-month", "one-year", "two-year"]
+    )
+    
+    payment_method = st.selectbox(
+        "Payment Method", 
+        options=["electronic_check", "credit_card", "bank_transfer"]
+    )
+    
+    tech_support = st.selectbox(
+        "Tech Support", 
+        options=["yes", "no"]
+    )
 
 # --- Predict Action ---
 if st.button("🚀 Predict Churn Risk"):
+    # Updated to your Render URL endpoint
     BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
 
+    # Exact payload matching schemas.py CustomerInput fields
     payload = {
-        "tenure_months": tenure_months,
-        "monthly_charges": monthly_charges,
-        "total_charges": total_charges,
-        "contract": contract,
-        "online_security": online_security,
-        "tech_support": tech_support,
-        "paperless_billing": paperless_billing,
+        "tenure_months": int(tenure_months),
+        "monthly_charges": float(monthly_charges),
+        "total_charges": float(total_charges),
+        "num_support_tickets": int(num_support_tickets),
+        "contract_type": contract_type,
         "payment_method": payment_method,
-        "gender": gender,
-        "senior_citizen": senior_citizen,
-        "partner": partner,
-        "dependents": dependents,
-        "num_support_tickets": num_support_tickets,
-        "num_admin_tickets": num_admin_tickets
+        "tech_support": tech_support
     }
 
     with st.spinner("Connecting to FastAPI backend..."):
@@ -61,17 +54,19 @@ if st.button("🚀 Predict Churn Risk"):
 
             if response.status_code == 200:
                 res = response.json()
-                risk = res.get("churn_risk", "Unknown")
-                prob = res.get("churn_probability")
+                
+                # Matching PredictionResponse fields in schemas.py
+                churn_pred = res.get("churn_prediction")
+                churn_prob = res.get("churn_probability", 0.0)
+                risk_level = res.get("churn_risk_level", "Unknown")
 
                 st.subheader("Prediction Result:")
-                if risk == "High":
-                    st.error(f"⚠️ Churn Risk: **{risk}**")
+                if churn_pred == 1 or risk_level.lower() == "high":
+                    st.error(f"⚠️ Churn Risk Level: **{risk_level}**")
                 else:
-                    st.success(f"✅ Churn Risk: **{risk}**")
+                    st.success(f"✅ Churn Risk Level: **{risk_level}**")
 
-                if prob is not None:
-                    st.metric(label="Churn Probability", value=f"{prob * 100:.1f}%")
+                st.metric(label="Churn Probability", value=f"{churn_prob * 100:.1f}%")
 
             else:
                 st.error(f"FastAPI Server returned status code: {response.status_code}")
