@@ -33,8 +33,8 @@ with col2:
 
 # --- Predict Action ---
 if st.button("🚀 Predict Churn Risk"):
-    # URL चा शेवटी trailing slash (/) जोडला आहे ज्यामुळे 405 Redirect एरर येणार नाही
-    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict/"
+    # exact URL match for backend
+    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
 
     payload = {
         "tenure_months": int(tenure_months),
@@ -69,5 +69,8 @@ if st.button("🚀 Predict Churn Risk"):
                 st.error(f"FastAPI Server returned status code: {response.status_code}")
                 st.code(response.text)
 
+        except requests.exceptions.JSONDecodeError:
+            st.error("FastAPI server response is not a valid JSON. Raw response:")
+            st.code(response.text)
         except requests.exceptions.RequestException as err:
             st.error(f"Failed to reach FastAPI backend: {err}")
