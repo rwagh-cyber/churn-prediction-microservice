@@ -75,7 +75,7 @@ if submit_button:
     try:
         # Send payload to local FastAPI server
 # Send payload to Render FastAPI backend server
-        response = requests.post("https://churn-prediction-microservice-1.onrender.com/predict", json=payload)
+        response = requests.post("https://churn-prediction-microservice.onrender.com/predict", json=payload)
         if response.status_code == 200:
             result = response.json()
             churn_prob = result.get("churn_probability", result.get("probability", 0.0))
