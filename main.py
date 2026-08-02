@@ -38,22 +38,19 @@ def predict_churn(customer: CustomerData):
         "churn_probability": round(float(probability), 2)
     }
 from fastapi import FastAPI, HTTPException, status
+
+import os
 import joblib
-import pandas as pd
-from typing import List
-from schemas import CustomerInput, BatchCustomerInput, PredictionResponse
 
-app = FastAPI(
-    title="Enterprise Customer Churn ML API",
-    description="Production-grade Machine Learning API featuring ColumnTransformer pipelines and dynamic schema validation.",
-    version="2.0.0"
-)
+# Resolve the directory of the current script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "pipeline.pkl") # Ensure filename matches yours
 
-# Load full pipeline artifact at startup
 try:
-    pipeline = joblib.load('churn_pipeline.joblib')
+    pipeline = joblib.load(MODEL_PATH)
 except Exception as e:
     pipeline = None
+    print(f"Error loading pipeline model: {e}")
 
 @app.get("/health", status_code=status.HTTP_200_OK)
 def health_check():
