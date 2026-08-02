@@ -14,6 +14,7 @@ with col1:
     monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.50)
     total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.00)
     contract = st.selectbox("Contract Type", ["month-to-month", "One year", "Two year"])
+    num_support_tickets = st.number_input("Number of Support Tickets", min_value=0, max_value=20, value=0)
 
 with col2:
     online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
@@ -25,6 +26,7 @@ with col2:
         "Bank transfer (automatic)", 
         "Credit card (automatic)"
     ])
+    num_admin_tickets = st.number_input("Number of Admin Tickets", min_value=0, max_value=20, value=0)
 
 with col3:
     gender = st.selectbox("Gender", ["Male", "Female"])
@@ -34,9 +36,8 @@ with col3:
 
 # --- Predict Action ---
 if st.button("🚀 Predict Churn Risk"):
-    BACKEND_URL = "https://churn-prediction-microservice.onrender.com/predict"
+    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
 
-    # All keys updated to snake_case matching FastAPI schemas.py
     payload = {
         "tenure_months": tenure_months,
         "monthly_charges": monthly_charges,
@@ -49,7 +50,9 @@ if st.button("🚀 Predict Churn Risk"):
         "gender": gender,
         "senior_citizen": senior_citizen,
         "partner": partner,
-        "dependents": dependents
+        "dependents": dependents,
+        "num_support_tickets": num_support_tickets,
+        "num_admin_tickets": num_admin_tickets
     }
 
     with st.spinner("Connecting to FastAPI backend..."):
