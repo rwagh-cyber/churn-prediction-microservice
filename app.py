@@ -10,6 +10,7 @@ st.write("Fill in customer details below to estimate churn risk.")
 col1, col2, col3 = st.columns(3)
 
 with col1:
+    tenure_months = st.number_input("Tenure (Months)", min_value=0, max_value=120, value=12)
     monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.50)
     total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.00)
     contract = st.selectbox("Contract Type", ["month-to-month", "One year", "Two year"])
@@ -30,6 +31,7 @@ if st.button("🚀 Predict Churn Risk"):
     BACKEND_URL = "https://churn-prediction-microservice.onrender.com/predict"
 
     payload = {
+        "tenure_months": tenure_months,  # <-- Added missing required field
         "MonthlyCharges": monthly_charges,
         "TotalCharges": total_charges,
         "Contract": contract,
