@@ -31,7 +31,7 @@ if st.button("🚀 Predict Churn Risk"):
     BACKEND_URL = "https://churn-prediction-microservice.onrender.com/predict"
 
     payload = {
-        "tenure_months": tenure_months,  # <-- Added missing required field
+        "tenure_months": tenure_months,  # <-- Crucial field expected by FastAPI
         "MonthlyCharges": monthly_charges,
         "TotalCharges": total_charges,
         "Contract": contract,
