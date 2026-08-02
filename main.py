@@ -1,11 +1,15 @@
 import os
 import joblib
-import pandas as pd
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 
-app = FastAPI(title="Customer Churn Prediction API")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "churn_pipeline.joblib")
 
+try:
+    pipeline = joblib.load(MODEL_PATH)
+    print("✅ Successfully loaded churn_pipeline.joblib!")
+except Exception as e:
+    pipeline = None
+    print(f"❌ Failed to load model: {e}")
 # --- Dynamic & Absolute Model Path Resolution ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
