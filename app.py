@@ -36,19 +36,20 @@ with col3:
 if st.button("🚀 Predict Churn Risk"):
     BACKEND_URL = "https://churn-prediction-microservice.onrender.com/predict"
 
+    # All keys updated to snake_case matching FastAPI schemas.py
     payload = {
         "tenure_months": tenure_months,
-        "MonthlyCharges": monthly_charges,
-        "TotalCharges": total_charges,
-        "Contract": contract,
-        "OnlineSecurity": online_security,
-        "TechSupport": tech_support,
-        "PaperlessBilling": paperless_billing,
+        "monthly_charges": monthly_charges,
+        "total_charges": total_charges,
+        "contract": contract,
+        "online_security": online_security,
+        "tech_support": tech_support,
+        "paperless_billing": paperless_billing,
         "payment_method": payment_method,
-        "Gender": gender,
-        "SeniorCitizen": senior_citizen,
-        "Partner": partner,
-        "Dependents": dependents
+        "gender": gender,
+        "senior_citizen": senior_citizen,
+        "partner": partner,
+        "dependents": dependents
     }
 
     with st.spinner("Connecting to FastAPI backend..."):
