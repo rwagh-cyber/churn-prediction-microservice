@@ -27,7 +27,7 @@ with col3:
 
 # Predict Button
 if st.button("🚀 Predict Churn Risk"):
-    # exact URL
+    # Live FastAPI Backend URL
     BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict/"
 
     payload = {
