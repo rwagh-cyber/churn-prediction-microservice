@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
@@ -5,11 +6,21 @@ import joblib
 
 app = FastAPI(title="Customer Churn Prediction API")
 
-# Load model safely
+# Path set to actual model file name from your repository
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "churn_pipeline.joblib")
+
+# Try loading pipeline first, fallback to xgboost file if needed
 try:
-    model = joblib.load("model.pkl")  # तुझ्या model फाईलचे नाव
-except Exception:
-    model = None
+    model = joblib.load(MODEL_PATH)
+    print("Model loaded successfully from churn_pipeline.joblib!")
+except Exception as e:
+    try:
+        ALT_PATH = os.path.join(os.path.dirname(__file__), "xgboost_churn_model.pkl")
+        model = joblib.load(ALT_PATH)
+        print("Model loaded from xgboost_churn_model.pkl!")
+    except Exception as err:
+        print(f"Error loading models: {err}")
+        model = None
 
 class CustomerInput(BaseModel):
     tenure_months: int
@@ -31,6 +42,12 @@ def read_root():
 @app.post("/predict")
 @app.post("/predict/")
 def predict(data: CustomerInput):
+    if model is None:
+        raise HTTPException(
+            status_code=500, 
+            detail="ML Model file not found on server. Please check repository files."
+        )
+
     try:
         input_dict = data.model_dump() if hasattr(data, "model_dump") else data.dict()
         
@@ -57,16 +74,16 @@ def predict(data: CustomerInput):
 
         df = pd.DataFrame([input_dict])
 
-        if model is not None:
-            prediction = int(model.predict(df)[0])
-            probability = float(model.predict_proba(df)[0][1]) if hasattr(model, "predict_proba") else None
+        # Real ML Model Prediction
+        prediction = int(model.predict(df)[0])
+        
+        if hasattr(model, "predict_proba"):
+            probability = float(model.predict_proba(df)[0][1])
         else:
-            prediction = 0
-            probability = 0.15
+            probability = float(prediction)
 
         risk_level = "High" if prediction == 1 else "Low"
 
-        # ALL KEYS ADDED TO MATCH test_api.py ASSERTIONS
         return {
             "churn_prediction": prediction,
             "prediction": prediction,
