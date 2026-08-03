@@ -1,21 +1,33 @@
 import os
 import joblib
+import pandas as pd
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "churn_pipeline.joblib")
+app = FastAPI()
 
-try:
-    pipeline = joblib.load(MODEL_PATH)
-    print("✅ Successfully loaded churn_pipeline.joblib!")
-except Exception as e:
-    pipeline = None
-    print(f"❌ Failed to load model: {e}")
+# --- CORS Settings (405 / Redirect Error टाळण्यासाठी) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # --- Dynamic & Absolute Model Path Resolution ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL_NAMES = ["pipeline.pkl", "model.pkl", "model.joblib", "churn_pipeline.pkl"]
-MODEL_PATH = None
+MODEL_NAMES = [
+    "churn_pipeline.joblib",
+    "churn_pipeline.pkl",
+    "pipeline.pkl",
+    "model.pkl",
+    "model.joblib"
+]
 
+MODEL_PATH = None
 for name in MODEL_NAMES:
     possible_path = os.path.join(BASE_DIR, name)
     if os.path.exists(possible_path):
@@ -52,7 +64,9 @@ def home():
     return {"message": "Welcome to Customer Churn Prediction API! Go to /docs for Swagger UI."}
 
 
+# दोन्ही रूट्स सपोर्ट केल्यामुळे Trailing Slash चा 405 Error येणार नाही
 @app.post("/predict")
+@app.post("/predict/")
 def predict(data: ChurnInput):
     if pipeline is None:
         raise HTTPException(
