@@ -1,93 +1,55 @@
-import os
-import joblib
-import pandas as pd
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import pandas as pd
+import joblib
 
-app = FastAPI()
+app = FastAPI(title="Customer Churn Prediction API")
 
-# --- CORS Settings (405 / Redirect Error टाळण्यासाठी) ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Load your trained model (make sure the filename matches your actual model file)
+try:
+    model = joblib.load("model.pkl")  # किंवा तुझ्या मॉडेल फाईलचे नाव (उदा. churn_model.pkl)
+except Exception as e:
+    model = None
 
-# --- Dynamic & Absolute Model Path Resolution ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-MODEL_NAMES = [
-    "churn_pipeline.joblib",
-    "churn_pipeline.pkl",
-    "pipeline.pkl",
-    "model.pkl",
-    "model.joblib"
-]
-
-MODEL_PATH = None
-for name in MODEL_NAMES:
-    possible_path = os.path.join(BASE_DIR, name)
-    if os.path.exists(possible_path):
-        MODEL_PATH = possible_path
-        break
-
-pipeline = None
-if MODEL_PATH:
-    try:
-        pipeline = joblib.load(MODEL_PATH)
-        print(f"✅ Model loaded successfully from: {MODEL_PATH}")
-    except Exception as e:
-        print(f"❌ Failed to load model from {MODEL_PATH}: {e}")
-else:
-    print("⚠️ No model file found in backend directory!")
-
-
-# --- Input Schema matching Streamlit Frontend ---
-class ChurnInput(BaseModel):
-    MonthlyCharges: float
-    TotalCharges: float
-    Contract: str
-    OnlineSecurity: str
-    TechSupport: str
-    PaperlessBilling: str
-    Gender: str
-    SeniorCitizen: int
-    Partner: str
-    Dependents: str
-
+# Pydantic Schema strictly matching ML Model's expected 7 features
+class CustomerInput(BaseModel):
+    tenure_months: int
+    monthly_charges: float
+    total_charges: float
+    contract_type: str
+    tech_support: str
+    payment_method: str
+    num_support_tickets: int
 
 @app.get("/")
-def home():
+def read_root():
     return {"message": "Welcome to Customer Churn Prediction API! Go to /docs for Swagger UI."}
 
-
-# दोन्ही रूट्स सपोर्ट केल्यामुळे Trailing Slash चा 405 Error येणार नाही
-@app.post("/predict")
 @app.post("/predict/")
-def predict(data: ChurnInput):
-    if pipeline is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Pipeline not initialized. Ensure your .pkl/.joblib model file is tracked and pushed to GitHub."
-        )
-
+def predict(data: CustomerInput):
+    if model is None:
+        raise HTTPException(status_code=500, detail="Model not loaded on server.")
+    
     try:
-        input_dict = data.dict()
-        input_df = pd.DataFrame([input_dict])
+        # Convert incoming JSON payload to DataFrame
+        input_data = data.dict()
+        df = pd.DataFrame([input_data])
 
-        prediction = pipeline.predict(input_df)[0]
-
+        # Model Prediction
+        prediction = int(model.predict(df)[0])
+        
         probability = None
-        if hasattr(pipeline, "predict_proba"):
-            probability = float(pipeline.predict_proba(input_df)[0][1])
+        if hasattr(model, "predict_proba"):
+            prob_array = model.predict_proba(df)[0]
+            probability = float(prob_array[1])
+
+        churn_risk = "High" if prediction == 1 else "Low"
 
         return {
-            "prediction": int(prediction),
-            "churn_risk": "High" if prediction == 1 else "Low",
+            "prediction": prediction,
+            "churn_risk": churn_risk,
             "churn_probability": probability
         }
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction Error: {str(e)}")
