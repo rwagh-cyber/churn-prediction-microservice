@@ -6,7 +6,7 @@ st.set_page_config(page_title="Customer Churn Prediction", page_icon="🚀", lay
 st.title("📊 Customer Churn Prediction Dashboard")
 st.write("Fill in customer details below to estimate churn risk.")
 
-# --- UI Input Layout ---
+# Input Layout
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -25,11 +25,11 @@ with col3:
     partner = st.selectbox("Partner", ["Yes", "No"])
     dependents = st.selectbox("Dependents", ["Yes", "No"])
 
-# --- Predict Action ---
+# Predict Button
 if st.button("🚀 Predict Churn Risk"):
-    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
+    # exact URL
+    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict/"
 
-    # Exactly matching ChurnInput in main.py
     payload = {
         "MonthlyCharges": float(monthly_charges),
         "TotalCharges": float(total_charges),
@@ -64,7 +64,7 @@ if st.button("🚀 Predict Churn Risk"):
                     st.metric(label="Churn Probability", value=f"{churn_prob * 100:.1f}%")
 
             else:
-                st.error(f"FastAPI Server returned status code: {response.status_code}")
+                st.error(f"Server returned status code: {response.status_code}")
                 st.code(response.text)
 
         except requests.exceptions.RequestException as err:
