@@ -7,43 +7,40 @@ st.title("📊 Customer Churn Prediction Dashboard")
 st.write("Fill in customer details below to estimate churn risk.")
 
 # --- UI Input Layout ---
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    tenure_months = st.number_input("Tenure (Months)", min_value=0, max_value=120, value=12)
-    monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=85.50)
-    total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=1026.00)
-    num_support_tickets = st.number_input("Support Tickets Raised", min_value=0, max_value=20, value=2)
+    monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.50)
+    total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.00)
+    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
+    paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
 
 with col2:
-    contract_type = st.selectbox(
-        "Contract Type", 
-        options=["month-to-month", "one-year", "two-year"]
-    )
-    
-    payment_method = st.selectbox(
-        "Payment Method", 
-        options=["electronic_check", "credit_card", "bank_transfer"]
-    )
-    
-    tech_support = st.selectbox(
-        "Tech Support", 
-        options=["yes", "no"]
-    )
+    online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
+    tech_support = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
+    gender = st.selectbox("Gender", ["Male", "Female"])
+
+with col3:
+    senior_citizen = st.selectbox("Senior Citizen", [0, 1])
+    partner = st.selectbox("Partner", ["Yes", "No"])
+    dependents = st.selectbox("Dependents", ["Yes", "No"])
 
 # --- Predict Action ---
 if st.button("🚀 Predict Churn Risk"):
-    # exact URL match for backend
     BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
 
+    # Exactly matching ChurnInput in main.py
     payload = {
-        "tenure_months": int(tenure_months),
-        "monthly_charges": float(monthly_charges),
-        "total_charges": float(total_charges),
-        "num_support_tickets": int(num_support_tickets),
-        "contract_type": contract_type,
-        "payment_method": payment_method,
-        "tech_support": tech_support
+        "MonthlyCharges": float(monthly_charges),
+        "TotalCharges": float(total_charges),
+        "Contract": contract,
+        "OnlineSecurity": online_security,
+        "TechSupport": tech_support,
+        "PaperlessBilling": paperless_billing,
+        "Gender": gender,
+        "SeniorCitizen": int(senior_citizen),
+        "Partner": partner,
+        "Dependents": dependents
     }
 
     with st.spinner("Connecting to FastAPI backend..."):
@@ -53,24 +50,22 @@ if st.button("🚀 Predict Churn Risk"):
             if response.status_code == 200:
                 res = response.json()
                 
-                churn_pred = res.get("churn_prediction")
-                churn_prob = res.get("churn_probability", 0.0)
-                risk_level = res.get("churn_risk_level", "Unknown")
+                prediction = res.get("prediction")
+                churn_risk = res.get("churn_risk", "Unknown")
+                churn_prob = res.get("churn_probability")
 
                 st.subheader("Prediction Result:")
-                if churn_pred == 1 or str(risk_level).lower() == "high":
-                    st.error(f"⚠️ Churn Risk Level: **{risk_level}**")
+                if churn_risk == "High" or prediction == 1:
+                    st.error(f"⚠️ Churn Risk: **{churn_risk}**")
                 else:
-                    st.success(f"✅ Churn Risk Level: **{risk_level}**")
+                    st.success(f"✅ Churn Risk: **{churn_risk}**")
 
-                st.metric(label="Churn Probability", value=f"{churn_prob * 100:.1f}%")
+                if churn_prob is not None:
+                    st.metric(label="Churn Probability", value=f"{churn_prob * 100:.1f}%")
 
             else:
                 st.error(f"FastAPI Server returned status code: {response.status_code}")
                 st.code(response.text)
 
-        except requests.exceptions.JSONDecodeError:
-            st.error("FastAPI server response is not a valid JSON. Raw response:")
-            st.code(response.text)
         except requests.exceptions.RequestException as err:
             st.error(f"Failed to reach FastAPI backend: {err}")
