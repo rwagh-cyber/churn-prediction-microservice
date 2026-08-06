@@ -80,13 +80,14 @@ st.divider()
 # Predict Button
 if st.button("🚀 Run Prediction Analysis"):
     # Backend Payload
+    # Corrected Payload for FastAPI
     payload = {
-        "tenure": tenure,
-        "MonthlyCharges": monthly_charges,
-        "TotalCharges": total_charges,
-        "Contract": contract,
-        "PaymentMethod": payment_method,
-        "TechSupport": tech_support,
+        "tenure_months": tenure,
+        "monthly_charges": monthly_charges,
+        "total_charges": total_charges,
+        "contract_type": contract,
+        "payment_method": payment_method,
+        "tech_support": tech_support,
         "num_support_tickets": num_support_tickets
     }
     
