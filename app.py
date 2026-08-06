@@ -1,69 +1,117 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="Customer Churn Prediction", page_icon="🚀", layout="wide")
+# Page Config (Title & Favicon)
+st.set_page_config(
+    page_title="Churn Predictor Pro",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.title("📊 Customer Churn Prediction Dashboard")
-st.write("Fill in customer details below to estimate churn risk.")
+# Custom CSS for Professional UI Styling
+st.markdown("""
+    <style>
+    /* Main App Background Gradient */
+    .stApp {
+        background: linear-gradient(to right, #0f172a, #1e293b);
+        color: #f8fafc;
+    }
+    
+    /* Card Container Styling */
+    div[data-testid="stVerticalBlock"] > div {
+        background-color: rgba(30, 41, 59, 0.7);
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    /* Custom Styling for Predict Button */
+    .stButton>button {
+        width: 100%;
+        background: linear-gradient(90deg, #3b82f6, #2563eb);
+        color: white;
+        font-weight: bold;
+        font-size: 18px;
+        padding: 12px;
+        border-radius: 10px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #2563eb, #1d4ed8);
+        box-shadow: 0px 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-st.markdown("---")
+# App Header
+st.title("📊 Customer Churn Analytics Dashboard")
+st.caption("Predict customer retention risk in real-time using AI/ML microservices.")
+st.divider()
 
-# --- UI Input Layout ---
+# Layout: Sidebar for Customer Info, Main Area for Financials & Prediction
+with st.sidebar:
+    st.header("👤 Customer Profile")
+    tenure = st.slider("Tenure (Months)", min_value=1, max_value=72, value=12)
+    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
+    payment_method = st.selectbox("Payment Method", [
+        "Electronic check", 
+        "Mailed check", 
+        "Bank transfer (automatic)", 
+        "Credit card (automatic)"
+    ])
+
+# Main Area Inputs in 2 Columns
 col1, col2 = st.columns(2)
 
 with col1:
-    tenure_months = st.number_input("Tenure (Months)", min_value=0, value=12)
-    monthly_charges = st.number_input("Monthly Charges ($)", min_value=0.0, value=65.50)
-    total_charges = st.number_input("Total Charges ($)", min_value=0.0, value=786.00)
-    contract_type = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
+    st.subheader("💳 Financial Details")
+    monthly_charges = st.number_input("Monthly Charges ($)", value=65.50, step=1.0)
+    total_charges = st.number_input("Total Charges ($)", value=786.00, step=10.0)
 
 with col2:
-    tech_support = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
-    payment_method = st.selectbox("Payment Method", ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"])
-    num_support_tickets = st.number_input("Num Support Tickets", min_value=0, value=1)
+    st.subheader("🛠️ Service & Support")
+    tech_support = st.selectbox("Tech Support Included?", ["No", "Yes", "No internet service"])
+    num_support_tickets = st.number_input("Support Tickets Raised", min_value=0, max_value=20, value=1)
 
-st.markdown("---")
+st.divider()
 
-# --- Predict Button ---
-if st.button("🚀 Predict Churn Risk", use_container_width=True):
-    # Live FastAPI Backend Endpoint
-    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict/"
-
-    # Sending exact 7 features required by FastAPI and ML pipeline
+# Predict Button
+if st.button("🚀 Run Prediction Analysis"):
+    # Backend Payload
     payload = {
-        "tenure_months": int(tenure_months),
-        "monthly_charges": float(monthly_charges),
-        "total_charges": float(total_charges),
-        "contract_type": contract_type,
-        "tech_support": tech_support,
-        "payment_method": payment_method,
-        "num_support_tickets": int(num_support_tickets)
+        "tenure": tenure,
+        "MonthlyCharges": monthly_charges,
+        "TotalCharges": total_charges,
+        "Contract": contract,
+        "PaymentMethod": payment_method,
+        "TechSupport": tech_support,
+        "num_support_tickets": num_support_tickets
     }
-
-    with st.spinner("Connecting to Backend Service..."):
+    
+    # Backend URL
+    BACKEND_URL = "https://churn-prediction-microservice-3.onrender.com/predict"
+    
+    with st.spinner("Analyzing risk factors..."):
         try:
-            response = requests.post(BACKEND_URL, json=payload, timeout=30)
-
+            response = requests.post(BACKEND_URL, json=payload)
             if response.status_code == 200:
-                res = response.json()
+                result = response.json()
+                churn_risk = result.get("churn_risk", "Unknown")
+                prob = result.get("churn_probability", 0) * 100
                 
-                prediction = res.get("prediction")
-                churn_risk = res.get("churn_risk", "Unknown")
-                churn_prob = res.get("churn_probability")
-
-                st.subheader("🎯 Prediction Result:")
+                st.subheader("📊 Prediction Results")
+                m1, m2 = st.columns(2)
                 
-                if churn_risk == "High" or prediction == 1:
-                    st.error(f"⚠️ Churn Risk: **{churn_risk}**")
+                if churn_risk == "High":
+                    m1.error(f"🚨 **Churn Risk:** {churn_risk}")
                 else:
-                    st.success(f"✅ Churn Risk: **{churn_risk}**")
-
-                if churn_prob is not None:
-                    st.metric(label="Churn Probability", value=f"{churn_prob * 100:.1f}%")
-
+                    m1.success(f"✅ **Churn Risk:** {churn_risk}")
+                    
+                m2.metric(label="Churn Probability", value=f"{prob:.1f}%")
+                
             else:
-                st.error(f"Server Error (Status Code {response.status_code}):")
-                st.code(response.text)
-
-        except requests.exceptions.RequestException as err:
-            st.error(f"Failed to connect to backend service: {err}")
+                st.error(f"Error {response.status_code}: {response.text}")
+        except Exception as e:
+            st.error(f"Failed to connect to backend: {e}")
