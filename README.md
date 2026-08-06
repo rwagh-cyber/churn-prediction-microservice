@@ -111,11 +111,3 @@ Run the full unit and API integration test suite using PyTest:
 
 Bash
 pytest
-
----
-
-### What to do next:
-1. Don't forget to change `[https://github.com/YOUR_USERNAME/churn-prediction-microservice.git](https://github.com/YOUR_USERNAME/churn-prediction-microservice.git)` to your actual GitHub URL.
-2. Push your code to GitHub! 
-
-Let me know if you want the GitHub commands again!
